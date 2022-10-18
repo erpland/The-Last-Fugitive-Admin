@@ -7,10 +7,11 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
-import { Button, Divider, Typography } from "@mui/material";
+import { Button, CircularProgress, Divider, Typography } from "@mui/material";
 import { UserType } from "../../../Types/Types";
 import { deActiveUser, reActiveUser } from "../../../Database/database";
 import { useAuth } from "../../../Context/AdminContext";
+import { useState } from "react";
 
 interface Column {
   id:
@@ -28,10 +29,14 @@ interface Column {
   button?: (
     value: boolean,
     id: string,
-    clickHandler: (id: string, value: boolean) => void
+    clickHandler: (e: any, id: string, value: boolean) => void
   ) => JSX.Element;
 }
 
+type Props = {
+  users: UserType[];
+  setUsers: React.Dispatch<React.SetStateAction<UserType[]>>;
+};
 const columns: readonly Column[] = [
   { id: "email", label: "Email", minWidth: 170 },
   { id: "nickname", label: "Nickname", minWidth: 100 },
@@ -61,39 +66,43 @@ const columns: readonly Column[] = [
     id: "isActive",
     label: "Change Status",
     minWidth: 50,
-    button: (value: boolean, id: string, clickHandler: (id: string, value: boolean) => void) => (
+    button: (
+      value: boolean,
+      id: string,
+      clickHandler: (e: any, id: string, value: boolean) => void
+    ) => (
       <Button
         variant="contained"
         color={value ? "error" : "success"}
-        onClick={() => clickHandler(id, value)}
+        onClick={(e: any) => clickHandler(e, id, value)}
       >
         {value ? "Deactive" : "Reactive"}
       </Button>
     ),
   },
 ];
-
-type Props = {
-  users: UserType[];
-  setUsers: React.Dispatch<React.SetStateAction<UserType[]>>;
-};
 const UsersTable: React.FC<Props> = ({ users, setUsers }) => {
   const auth = useAuth();
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
-  const handleClick = async (id: string, value: boolean) => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleClick = async (e: any, id: string, value: boolean) => {
+    e.target.disabled = true;
+    e.target.classList.add("Mui-disabled");
     try {
       if (value) {
         await deActiveUser(auth?.token!, id);
       } else {
         await reActiveUser(auth?.token!, id);
       }
-
       const index = users.findIndex((user) => user._id === id);
       users[index].isActive = !value;
       setUsers([...users]);
     } catch {
       console.log("Error");
+    } finally {
+      e.target.disabled = false;
+      e.target.classList.remove("Mui-disabled");
     }
   };
   const handleChangePage = (event: unknown, newPage: number) => {
